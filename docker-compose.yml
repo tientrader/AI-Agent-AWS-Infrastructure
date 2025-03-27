@@ -1,0 +1,18 @@
+version: "3.8"
+
+services:
+  streamlit_app:
+    image: public.ecr.aws/k5o6t2c9/ai-agent:latest
+    ports:
+      - "8501:8501"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - EMAIL_ADDRESS=${EMAIL_ADDRESS}
+      - EMAIL_APP_PASSWORD=${EMAIL_APP_PASSWORD}
+      - ZOOM_ACCOUNT_ID=${ZOOM_ACCOUNT_ID}
+      - ZOOM_CLIENT_ID=${ZOOM_CLIENT_ID}
+      - ZOOM_CLIENT_SECRET=${ZOOM_CLIENT_SECRET}
+      - ZOOM_LINK=${ZOOM_LINK}
+      - ZOOM_PASSCODE=${ZOOM_PASSCODE}
+      - COMPANY_NAME=${COMPANY_NAME}
+    restart: always
