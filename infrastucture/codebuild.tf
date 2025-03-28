@@ -31,6 +31,10 @@ resource "aws_codebuild_project" "ai_ecs_dev" {
   }
 }
 
+resource "aws_codebuild_webhook" "ai_ecs_dev_webhook" {
+  project_name = aws_codebuild_project.ai_ecs_dev.name
+}
+
 resource "aws_codebuild_project" "ai_ecs_prod" {
   name         = "ai-ecs-prod"
   description  = "Build project for AI ECS Prod"
@@ -62,4 +66,8 @@ resource "aws_codebuild_project" "ai_ecs_prod" {
       stream_name = "build-log"
     }
   }
+}
+
+resource "aws_codebuild_webhook" "ai_ecs_prod_webhook" {
+  project_name = aws_codebuild_project.ai_ecs_prod.name
 }
