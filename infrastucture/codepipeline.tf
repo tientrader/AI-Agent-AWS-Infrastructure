@@ -58,7 +58,7 @@ resource "aws_codepipeline" "ai_ecs_dev" {
 
       configuration = {
         ClusterName = "tienaws-ecs"
-        ServiceName = "ai-agent-dev"
+        ServiceName = "ai-agent"
         FileName    = "imagedefinitions.json"
       }
     }
