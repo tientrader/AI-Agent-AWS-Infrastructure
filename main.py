@@ -25,8 +25,8 @@ email_app_password = os.getenv("EMAIL_APP_PASSWORD")
 zoom_client_id = os.getenv("ZOOM_CLIENT_ID")
 zoom_client_secret = os.getenv("ZOOM_CLIENT_SECRET")
 zoom_account_id = os.getenv("ZOOM_ACCOUNT_ID")
-ZOOM_LINK = os.getenv("ZOOM_LINK")
-ZOOM_PASSCODE = os.getenv("ZOOM_PASSCODE")
+zoom_link = os.getenv("ZOOM_LINK")
+zoom_passcode = os.getenv("ZOOM_PASSCODE")
 
 class CustomZoomTool(ZoomTool):
     def __init__(self, *, account_id: Optional[str] = None, client_id: Optional[str] = None, client_secret: Optional[str] = None, name: str = "zoom_tool"):
@@ -169,7 +169,8 @@ def init_session_state() -> None:
     defaults = {
         'candidate_email': "", 'openai_api_key': "", 'resume_text': "", 'analysis_complete': False,
         'is_selected': False, 'zoom_account_id': "", 'zoom_client_id': "", 'zoom_client_secret': "",
-        'email_sender': "", 'email_passkey': "", 'company_name': "", 'current_pdf': None
+        'email_sender': "", 'email_passkey': "", 'company_name': "", 'current_pdf': None,
+        'zoom_link': "", 'zoom_passcode': ""
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -371,13 +372,16 @@ def schedule_interview(scheduler: Agent, candidate_email: str, email_agent: Agen
         interview_time = tomorrow_vn.replace(hour=11, minute=0, second=0, microsecond=0)
         formatted_time = interview_time.strftime('%Y-%m-%dT%H:%M:%S')
 
+        zoom_link = st.session_state.get("zoom_link", "N/A")
+        zoom_passcode = st.session_state.get("zoom_passcode", "N/A")
+
         # Send confirmation email
         email_agent.run(
             f"""Send an interview confirmation email with these details:
             - Role: {role} position
             - Meeting Time: {formatted_time} Vietnam Time (UTC+7)
-            - Meeting Link: {ZOOM_LINK}
-            - Passcode: {ZOOM_PASSCODE}
+            - Meeting Link: {zoom_link}
+            - Passcode: {zoom_passcode}
 
             Important Notes:
             - The meeting must be between 9 AM - 5 PM Vietnam Time
@@ -386,7 +390,7 @@ def schedule_interview(scheduler: Agent, candidate_email: str, email_agent: Agen
             """
         )
 
-        st.success(f"Interview scheduled successfully! Zoom link: {ZOOM_LINK}")
+        st.success(f"Interview scheduled successfully! Zoom link: {zoom_link}")
 
     except Exception as e:
         logger.error(f"Error scheduling interview: {str(e)}")
@@ -425,6 +429,12 @@ def init_session_state():
     if "company_name" not in st.session_state:
         st.session_state.company_name = os.getenv("COMPANY_NAME", "")
 
+    if "zoom_link" not in st.session_state:
+        st.session_state.zoom_link = os.getenv("ZOOM_LINK", "")
+
+    if "zoom_passcode" not in st.session_state:
+        st.session_state.zoom_passcode = os.getenv("ZOOM_PASSCODE", "")
+
 def main():
     st.title("AI Recruitment System")
     init_session_state()
@@ -443,6 +453,8 @@ def main():
         zoom_account_id = st.text_input("Zoom Account ID", type="password", value=st.session_state.zoom_account_id)
         zoom_client_id = st.text_input("Zoom Client ID", type="password", value=st.session_state.zoom_client_id)
         zoom_client_secret = st.text_input("Zoom Client Secret", type="password", value=st.session_state.zoom_client_secret)
+        zoom_link = st.text_input("Zoom Meeting Link", value=st.session_state.zoom_link)
+        zoom_passcode = st.text_input("Zoom Passcode", type="password", value=st.session_state.zoom_passcode)
 
         # Email Configuration
         st.subheader("Email Settings")
@@ -450,13 +462,16 @@ def main():
         email_passkey = st.text_input("Email App Password", type="password", value=st.session_state.email_passkey)
         company_name = st.text_input("Company Name", value=st.session_state.company_name)
 
-        # Cập nhật session state nếu người dùng thay đổi giá trị
         if zoom_account_id:
             st.session_state.zoom_account_id = zoom_account_id
         if zoom_client_id:
             st.session_state.zoom_client_id = zoom_client_id
         if zoom_client_secret:
             st.session_state.zoom_client_secret = zoom_client_secret
+        if zoom_link:
+            st.session_state.zoom_link = zoom_link
+        if zoom_passcode:
+            st.session_state.zoom_passcode = zoom_passcode
         if email_sender:
             st.session_state.email_sender = email_sender
         if email_passkey:
@@ -469,6 +484,8 @@ def main():
             "Zoom Account ID": st.session_state.zoom_account_id,
             "Zoom Client ID": st.session_state.zoom_client_id,
             "Zoom Client Secret": st.session_state.zoom_client_secret,
+            "Zoom Link": st.session_state.zoom_link,
+            "Zoom Passcode": st.session_state.zoom_passcode,
             "Email Sender": st.session_state.email_sender,
             "Email Password": st.session_state.email_passkey,
             "Company Name": st.session_state.company_name,
@@ -577,13 +594,11 @@ def main():
     st.subheader("Resume Analysis Result")
 
     if st.session_state.get("resume_feedback"):
-        # Kiểm tra xem ứng viên có được chọn hay không
         if st.session_state.get("resume_selected"):
             st.success("✅ **Selected**")
         else:
             st.error("❌ **Not Selected**")
 
-        # Hiển thị format giống nhau dù có được chọn hay không
         st.markdown(f"""
         - **Matching Skills (Score: {st.session_state.resume_feedback['matching_skills_score']}):**  
         {", ".join(st.session_state.resume_feedback['matching_skills'])}
@@ -600,7 +615,6 @@ def main():
         🏆 **Experience Level: {st.session_state.resume_feedback['experience_level'].capitalize()}**
         """)
 
-        # Phần feedback chung
         st.markdown(f"**Feedback:** {st.session_state.resume_feedback.get('overall_fit', 'No detailed feedback available.')}")
 
     if st.session_state.get('analysis_complete') and st.session_state.get('is_selected', False):
@@ -608,41 +622,41 @@ def main():
         st.info("Click 'Proceed with Application' to continue with the interview process.")
         
         if st.button("Proceed with Application", key="proceed_button"):
-            print("DEBUG: Proceed button clicked")  # Debug
+            print("DEBUG: Proceed button clicked")
             with st.spinner("🔄 Processing your application..."):
                 try:
-                    print("DEBUG: Creating email agent")  # Debug
+                    print("DEBUG: Creating email agent")
                     email_agent = create_email_agent()
-                    print(f"DEBUG: Email agent created: {email_agent}")  # Debug
+                    print(f"DEBUG: Email agent created: {email_agent}")
                     
-                    print("DEBUG: Creating scheduler agent")  # Debug
+                    print("DEBUG: Creating scheduler agent")
                     scheduler_agent = create_scheduler_agent()
-                    print(f"DEBUG: Scheduler agent created: {scheduler_agent}")  # Debug
+                    print(f"DEBUG: Scheduler agent created: {scheduler_agent}")
 
                     # 3. Send selection email
                     with st.status("📧 Sending confirmation email...", expanded=True) as status:
-                        print(f"DEBUG: Attempting to send email to {st.session_state.candidate_email}")  # Debug
+                        print(f"DEBUG: Attempting to send email to {st.session_state.candidate_email}")
                         send_selection_email(
                             email_agent,
                             st.session_state.candidate_email,
                             role
                         )
-                        print("DEBUG: Email sent successfully")  # Debug
+                        print("DEBUG: Email sent successfully")
                         status.update(label="✅ Confirmation email sent!")
 
                     # 4. Schedule interview
                     with st.status("📅 Scheduling interview...", expanded=True) as status:
-                        print("DEBUG: Attempting to schedule interview")  # Debug
+                        print("DEBUG: Attempting to schedule interview")
                         schedule_interview(
                             scheduler_agent,
                             st.session_state.candidate_email,
                             email_agent,
                             role
                         )
-                        print("DEBUG: Interview scheduled successfully")  # Debug
+                        print("DEBUG: Interview scheduled successfully")
                         status.update(label="✅ Interview scheduled!")
 
-                    print("DEBUG: All processes completed successfully")  # Debug
+                    print("DEBUG: All processes completed successfully")
                     st.success("""
                         🎉 Application Successfully Processed!
                         
