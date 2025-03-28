@@ -1,6 +1,8 @@
 resource "aws_codepipeline" "ai_ecs_dev" {
-  name     = "ai-ecs-dev"
-  role_arn = aws_iam_role.codepipeline_role.arn
+  name           = "ai-ecs-dev"
+  role_arn       = aws_iam_role.codepipeline_role.arn
+  pipeline_type  = "V2"
+  execution_mode = "QUEUED"
 
 
   artifact_store {
@@ -66,8 +68,10 @@ resource "aws_codepipeline" "ai_ecs_dev" {
 }
 
 resource "aws_codepipeline" "ai_ecs_prod" {
-  name     = "ai-ecs-prod"
-  role_arn = aws_iam_role.codepipeline_role.arn
+  name           = "ai-ecs-prod"
+  role_arn       = aws_iam_role.codepipeline_role.arn
+  pipeline_type  = "V2"
+  execution_mode = "QUEUED"
 
   artifact_store {
     location = aws_s3_bucket.pipeline_artifacts.bucket
