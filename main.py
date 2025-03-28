@@ -183,7 +183,7 @@ def main():
                                 st.info("We've sent you an email with detailed feedback.")
                             except Exception as e:
                                 logger.error(f"Error sending rejection email: {e}")
-                                st.error("Could not send feedback email. Please try again.")
+                                st.error("Could not send feedback email. Please try again!")
 
     st.subheader("Resume Analysis Result")
 
