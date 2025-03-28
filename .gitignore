@@ -19,3 +19,5 @@ crash.log
 .terraform.lock.hcl
 
 venv/
+
+__pycache__/
