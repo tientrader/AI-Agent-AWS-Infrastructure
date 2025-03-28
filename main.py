@@ -180,7 +180,7 @@ def main():
                                     role=role,
                                     feedback=feedback
                                 )
-                                st.info("We've sent you an email with detailed feedback.")
+                                st.info("We've sent you an email with detailed feedback!")
                             except Exception as e:
                                 logger.error(f"Error sending rejection email: {e}")
                                 st.error("Could not send feedback email. Please try again!")
