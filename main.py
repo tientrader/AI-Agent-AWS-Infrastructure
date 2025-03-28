@@ -657,10 +657,10 @@ def main():
                     """)
 
                 except Exception as e:
-                    print(f"DEBUG: Error occurred: {str(e)}")  # Debug
-                    print(f"DEBUG: Error type: {type(e)}")  # Debug
+                    print(f"DEBUG: Error occurred: {str(e)}")
+                    print(f"DEBUG: Error type: {type(e)}")
                     import traceback
-                    print(f"DEBUG: Full traceback: {traceback.format_exc()}")  # Debug
+                    print(f"DEBUG: Full traceback: {traceback.format_exc()}")
                     st.error(f"An error occurred: {str(e)}")
                     st.error("Please try again or contact support.")
 

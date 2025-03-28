@@ -4,7 +4,7 @@ services:
   streamlit_app:
     image: public.ecr.aws/k5o6t2c9/ai-agent:latest
     ports:
-      - "8501:8501"
+      - "8080:8080"
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - EMAIL_ADDRESS=${EMAIL_ADDRESS}
