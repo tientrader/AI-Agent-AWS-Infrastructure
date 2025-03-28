@@ -145,7 +145,7 @@ resource "aws_codepipeline" "ai_ecs_prod" {
       input_artifacts = ["build_output"]
 
       configuration = {
-        ClusterName = "tienaws-ecs"
+        ClusterName = "tienaws-ecs-prod"
         ServiceName = "ai-agent-prod"
         FileName    = "imagedefinitions.json"
       }
@@ -203,7 +203,8 @@ resource "aws_iam_policy" "codepipeline_policy" {
           "codebuild:*",
           "codestar-connections:UseConnection",
           "ecs:*",
-          "iam:PassRole"
+          "iam:PassRole",
+          "sns:Publish"
         ]
         Resource = "*"
       }
