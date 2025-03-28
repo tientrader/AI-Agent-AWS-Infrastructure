@@ -165,7 +165,7 @@ def main():
                     )
 
                     if is_selected:
-                        st.success("Congratulations! Your skills match our requirements.")
+                        st.success("Congratulations! Your skills match our requirements!")
                         st.session_state.analysis_complete = True
                         st.session_state.is_selected = True
                         st.rerun()
