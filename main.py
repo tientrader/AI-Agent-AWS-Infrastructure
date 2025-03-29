@@ -5,8 +5,7 @@ from dotenv import load_dotenv
 from streamlit_pdf_viewer import pdf_viewer
 from phi.utils.log import logger
 
-from role_requirements import ROLE_REQUIREMENTS
-from agents import create_resume_analyzer, create_email_agent, create_scheduler_agent
+from agents import create_resume_analyzer, create_email_agent
 from utils import extract_text_from_pdf
 from recruitment_utils import analyze_resume, send_selection_email, send_rejection_email, schedule_interview
 
@@ -52,9 +51,6 @@ def main():
             st.session_state.openai_api_key = api_key
 
         st.subheader("Zoom Settings")
-        zoom_account_id = st.text_input("Zoom Account ID", type="password", value=st.session_state.zoom_account_id)
-        zoom_client_id = st.text_input("Zoom Client ID", type="password", value=st.session_state.zoom_client_id)
-        zoom_client_secret = st.text_input("Zoom Client Secret", type="password", value=st.session_state.zoom_client_secret)
         zoom_link = st.text_input("Zoom Meeting Link", value=st.session_state.zoom_link)
         zoom_passcode = st.text_input("Zoom Passcode", type="password", value=st.session_state.zoom_passcode)
 
@@ -63,12 +59,6 @@ def main():
         email_passkey = st.text_input("Email App Password", type="password", value=st.session_state.email_passkey)
         company_name = st.text_input("Company Name", value=st.session_state.company_name)
 
-        if zoom_account_id:
-            st.session_state.zoom_account_id = zoom_account_id
-        if zoom_client_id:
-            st.session_state.zoom_client_id = zoom_client_id
-        if zoom_client_secret:
-            st.session_state.zoom_client_secret = zoom_client_secret
         if zoom_link:
             st.session_state.zoom_link = zoom_link
         if zoom_passcode:
@@ -101,8 +91,8 @@ def main():
         st.warning("Please enter your OpenAI API key in the sidebar to continue.")
         return
 
-    role = st.selectbox("Select the role you're applying for:", ["ai_ml_engineer", "frontend_engineer", "backend_engineer"])
-    with st.expander("View Required Skills", expanded=True): st.markdown(ROLE_REQUIREMENTS[role])
+    role = st.text_input("Enter Role", "")
+    role_requirements = st.text_area("Enter role requirements", "")
 
     if st.button("📝 New Application"):
         keys_to_clear = ['resume_text', 'analysis_complete', 'is_selected', 'candidate_email', 'current_pdf']
@@ -161,6 +151,7 @@ def main():
                     is_selected, feedback = analyze_resume(
                         st.session_state.resume_text,
                         role,
+                        role_requirements,
                         resume_analyzer
                     )
 
@@ -195,18 +186,18 @@ def main():
 
         st.markdown(f"""
         - **Matching Skills (Score: {st.session_state.resume_feedback['matching_skills_score']}):**  
-        {", ".join(st.session_state.resume_feedback['matching_skills'])}
+        {", ".join(st.session_state.resume_feedback.get('matching_skills', []))}  
 
-        - **Missing Skills (Score: {st.session_state.resume_feedback['missing_skills_score']}):**  
-        {", ".join(st.session_state.resume_feedback['missing_skills'])}
+        - **Missing Skills:**  
+        {", ".join(st.session_state.resume_feedback.get('missing_skills', []))}  
 
-        - **Project Evaluation (Score: {st.session_state.resume_feedback['project_experience_score']}):**  
-        {st.session_state.resume_feedback['project_evaluation']}
+        - **Project Evaluation:**  
+        {st.session_state.resume_feedback['project_evaluation']}  
 
         - **Overall Fit (Score: {st.session_state.resume_feedback['overall_fit_score']}):**  
-        {st.session_state.resume_feedback['overall_fit']}
+        {st.session_state.resume_feedback['overall_fit']}  
 
-        🏆 **Experience Level: {st.session_state.resume_feedback['experience_level'].capitalize()}**
+        🏆 **Experience Level:** {st.session_state.resume_feedback['experience_level'].capitalize()}  
         """)
 
         st.markdown(f"**Feedback:** {st.session_state.resume_feedback.get('overall_fit', 'No detailed feedback available.')}")
@@ -219,7 +210,6 @@ def main():
             with st.spinner("🔄 Processing your application..."):
                 try:
                     email_agent = create_email_agent()
-                    scheduler_agent = create_scheduler_agent()
 
                     with st.status("📧 Sending confirmation email...", expanded=True) as status:
                         send_selection_email(
@@ -231,8 +221,6 @@ def main():
 
                     with st.status("📅 Scheduling interview...", expanded=True) as status:
                         schedule_interview(
-                            scheduler_agent,
-                            st.session_state.candidate_email,
                             email_agent,
                             role
                         )

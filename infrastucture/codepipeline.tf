@@ -4,9 +4,8 @@ resource "aws_codepipeline" "ai_ecs_dev" {
   pipeline_type  = "V2"
   execution_mode = "QUEUED"
 
-
   artifact_store {
-    location = aws_s3_bucket.pipeline_artifacts.bucket
+    location = data.aws_s3_bucket.pipeline_artifacts.bucket
     type     = "S3"
   }
 
@@ -74,7 +73,7 @@ resource "aws_codepipeline" "ai_ecs_prod" {
   execution_mode = "QUEUED"
 
   artifact_store {
-    location = aws_s3_bucket.pipeline_artifacts.bucket
+    location = data.aws_s3_bucket.pipeline_artifacts.bucket
     type     = "S3"
   }
 
@@ -164,9 +163,8 @@ resource "aws_sns_topic_subscription" "email_subscription" {
   endpoint  = "ntien.se03@gmail.com"
 }
 
-resource "aws_s3_bucket" "pipeline_artifacts" {
-  bucket        = "tienaws-pipeline-artifacts"
-  force_destroy = true
+data "aws_s3_bucket" "pipeline_artifacts" {
+  bucket = "tienaws-pipeline-artifacts"
 }
 
 resource "aws_codestarconnections_connection" "ecs_pro" {
