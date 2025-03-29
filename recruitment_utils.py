@@ -4,11 +4,11 @@ import streamlit as st
 from datetime import datetime, timedelta
 from agno.agent import Agent
 from phi.utils.log import logger
-from role_requirements import ROLE_REQUIREMENTS
 
 def analyze_resume(
     resume_text: str,
     role: str,
+    role_requirements: str,
     analyzer: Agent
 ) -> tuple[bool, str]:
     """Analyze a resume based on the role requirements."""
@@ -16,25 +16,21 @@ def analyze_resume(
         response = analyzer.run(
             f"""Please analyze this resume against the following requirements and provide your response in valid JSON format:
             Role: {role}
-            Role-Specific Evaluation Criteria:
-            {ROLE_REQUIREMENTS[role]}
+            Role-Specific Evaluation Criteria: {role_requirements}
             
-            Resume Text:
-            {resume_text}
+            Resume Text: {resume_text}
 
             Your response must be a valid JSON object like this:
             {{
                 "selected": true/false,
                 "feedback": {{
                     "matching_skills": ["skill1", "skill2"],
-                    "matching_skills_score": 8,  
+                    "matching_skills_score": 0-100,
                     "missing_skills": ["skill3", "skill4"],
-                    "missing_skills_score": 4,  
                     "project_evaluation": "Evaluation of relevant projects",
-                    "project_experience_score": 7,  
                     "overall_fit": "Summary of the candidate’s suitability",
-                    "overall_fit_score": 8,  
-                    "experience_level": "junior/mid/senior"
+                    "overall_fit_score": 0-100,
+                    "experience_level": "intern/fresher/junior/mid/senior/leader/manager"
                 }}
             }}
             Important: Return ONLY the JSON object without any markdown formatting or backticks.
@@ -81,14 +77,13 @@ def send_rejection_email(email_agent: Agent, to_email: str, role: str, feedback:
         f"""
         Send an email to {to_email} regarding their application for the {role} position.
         Use this specific style:
-        1. use all lowercase letters
-        2. be empathetic and human
-        3. mention specific feedback from: {feedback}
-        4. encourage them to upskill and try again
-        5. suggest some learning resources based on missing skills
-        6. end the email with exactly:
-           best,
-           the ai recruiting team
+        1. be empathetic and human
+        2. mention specific feedback from: {feedback}
+        3. encourage them to upskill and try again
+        4. suggest some learning resources based on missing skills
+        5. end the email with exactly:
+           Best,
+           The AI Recruiting Team.
         
         Do not include any names in the signature.
         The tone should be like a human writing a quick but thoughtful email.
@@ -96,7 +91,7 @@ def send_rejection_email(email_agent: Agent, to_email: str, role: str, feedback:
     )
 
 
-def schedule_interview(scheduler: Agent, candidate_email: str, email_agent: Agent, role: str) -> None:
+def schedule_interview(email_agent: Agent, role: str) -> None:
     """Schedule interviews during business hours (9 AM - 5 PM Vietnam Time)."""
     try:
         vn_tz = pytz.timezone('Asia/Ho_Chi_Minh')
@@ -110,16 +105,19 @@ def schedule_interview(scheduler: Agent, candidate_email: str, email_agent: Agen
 
         email_agent.run(
             f"""Send an interview confirmation email with these details:
-            - Role: {role} position
-            - Meeting Time: {formatted_time} Vietnam Time (UTC+7)
-            - Meeting Link: {zoom_link}
-            - Passcode: {zoom_passcode}
 
-            Important Notes:
-            - The meeting must be between 9 AM - 5 PM Vietnam Time
-            - Use Vietnam Time (UTC+7) timezone for all communications
-            - Include timezone information in the meeting details.
-            """
+        Role: {role} position  
+        Date & Time: {formatted_time} Vietnam Time (UTC+7)  
+        Meeting Link: [{zoom_link}]({zoom_link})  
+        Passcode: {zoom_passcode}  
+
+        Please ensure that you are available for the meeting during business hours (9 AM - 5 PM Vietnam Time).  
+
+        If you have any questions or need further assistance, feel free to reach out.  
+
+        Best,  
+        The AI Recruiting Team.
+        """
         )
 
         st.success(f"Interview scheduled successfully! Zoom link: {zoom_link}")
