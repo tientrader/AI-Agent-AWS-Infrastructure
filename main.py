@@ -120,13 +120,6 @@ def main():
     role = st.text_input("Enter Role", "")
     role_requirements = st.text_area("Enter role requirements", "")
 
-    # if st.button("📝 New Application"):
-    #     keys_to_clear = ['resume_text', 'analysis_complete', 'is_selected', 'candidate_email', 'current_pdf']
-    #     for key in keys_to_clear:
-    #         if key in st.session_state:
-    #             st.session_state[key] = None if key == 'current_pdf' else ""
-    #     st.rerun()
-
     resume_file = st.file_uploader("Upload your resume (PDF)", type=["pdf"], key="resume_uploader")
     if resume_file is not None and resume_file != st.session_state.get('current_pdf'):
         st.session_state.current_pdf = resume_file
