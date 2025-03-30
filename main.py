@@ -4,6 +4,7 @@ import streamlit as st
 from dotenv import load_dotenv
 from streamlit_pdf_viewer import pdf_viewer
 from phi.utils.log import logger
+from database import create_table, test_db_connection
 
 from agents import create_resume_analyzer, create_email_agent
 from utils import extract_text_from_pdf
@@ -15,12 +16,14 @@ ENV_VARS = {
     "openai_api_key": "OPENAI_API_KEY",
     "email_sender": "EMAIL_ADDRESS",
     "email_passkey": "EMAIL_APP_PASSWORD",
-    "zoom_client_id": "ZOOM_CLIENT_ID",
-    "zoom_client_secret": "ZOOM_CLIENT_SECRET",
-    "zoom_account_id": "ZOOM_ACCOUNT_ID",
     "zoom_link": "ZOOM_LINK",
     "zoom_passcode": "ZOOM_PASSCODE",
-    "company_name": "COMPANY_NAME"
+    "company_name": "COMPANY_NAME",
+    "db_host": "MYSQL_HOST",
+    "db_port": "MYSQL_PORT",
+    "db_user": "MYSQL_USER",
+    "db_password": "MYSQL_PASSWORD",
+    "db_database": "MYSQL_DATABASE"
 }
 
 def init_session_state():
@@ -39,6 +42,7 @@ def init_session_state():
 
 
 def main():
+    create_table()
     st.title("AI Recruitment System")
     init_session_state()
 
@@ -49,6 +53,16 @@ def main():
         api_key = st.text_input("OpenAI API Key", type="password", value=st.session_state.openai_api_key)
         if api_key:
             st.session_state.openai_api_key = api_key
+        
+        st.subheader("Database Settings")
+        st.session_state["db_host"] = st.text_input("MySQL Host", value=st.session_state.get("db_host", "localhost"))
+        st.session_state["db_port"] = st.text_input("MySQL Port", value=st.session_state.get("db_port", 3306))
+        st.session_state["db_user"] = st.text_input("MySQL User", value=st.session_state.get("db_user", "root"))
+        st.session_state["db_password"] = st.text_input("MySQL Password", type="password", value=st.session_state.get("db_password", ""))
+        st.session_state["db_name"] = st.text_input("Database Name", value=st.session_state.get("db_name", "recruitment"))
+
+        if st.button("Test DB Connection"):
+            test_db_connection()
 
         st.subheader("Zoom Settings")
         zoom_link = st.text_input("Zoom Meeting Link", value=st.session_state.zoom_link)
@@ -69,17 +83,29 @@ def main():
             st.session_state.email_passkey = email_passkey
         if company_name:
             st.session_state.company_name = company_name
+        if st.session_state.db_host:
+            st.session_state.db_host = st.session_state.db_host
+        if st.session_state.db_port:
+            st.session_state.db_port = st.session_state.db_port
+        if st.session_state.db_user:
+            st.session_state.db_user = st.session_state.db_user
+        if st.session_state.db_password:
+            st.session_state.db_password = st.session_state.db_password
+        if st.session_state.db_name:
+            st.session_state.db_name = st.session_state.db_name
 
         required_configs = {
-            "OpenAI API Key": st.session_state.openai_api_key,
-            "Zoom Account ID": st.session_state.zoom_account_id,
-            "Zoom Client ID": st.session_state.zoom_client_id,
-            "Zoom Client Secret": st.session_state.zoom_client_secret,
-            "Zoom Link": st.session_state.zoom_link,
-            "Zoom Passcode": st.session_state.zoom_passcode,
-            "Email Sender": st.session_state.email_sender,
-            "Email Password": st.session_state.email_passkey,
-            "Company Name": st.session_state.company_name,
+            "OpenAI API Key": st.session_state.get("openai_api_key"),
+            "Zoom Link": st.session_state.get("zoom_link"),
+            "Zoom Passcode": st.session_state.get("zoom_passcode"),
+            "Email Sender": st.session_state.get("email_sender"),
+            "Email Password": st.session_state.get("email_passkey"),
+            "Company Name": st.session_state.get("company_name"),
+            "MySQL Host": st.session_state.get("db_host"),
+            "MySQL Port": st.session_state.get("db_port"),
+            "MySQL User": st.session_state.get("db_user"),
+            "MySQL Password": st.session_state.get("db_password"),
+            "Database Name": st.session_state.get("db_name"),
         }
 
     missing_configs = [k for k, v in required_configs.items() if not v]
@@ -94,12 +120,12 @@ def main():
     role = st.text_input("Enter Role", "")
     role_requirements = st.text_area("Enter role requirements", "")
 
-    if st.button("📝 New Application"):
-        keys_to_clear = ['resume_text', 'analysis_complete', 'is_selected', 'candidate_email', 'current_pdf']
-        for key in keys_to_clear:
-            if key in st.session_state:
-                st.session_state[key] = None if key == 'current_pdf' else ""
-        st.rerun()
+    # if st.button("📝 New Application"):
+    #     keys_to_clear = ['resume_text', 'analysis_complete', 'is_selected', 'candidate_email', 'current_pdf']
+    #     for key in keys_to_clear:
+    #         if key in st.session_state:
+    #             st.session_state[key] = None if key == 'current_pdf' else ""
+    #     st.rerun()
 
     resume_file = st.file_uploader("Upload your resume (PDF)", type=["pdf"], key="resume_uploader")
     if resume_file is not None and resume_file != st.session_state.get('current_pdf'):
@@ -236,10 +262,24 @@ def main():
                     st.error(f"An error occurred: {str(e)}")
                     st.error("Please try again or contact support.")
 
-    if st.sidebar.button("Reset Application"):
-        for key in st.session_state.keys():
-            if key != 'openai_api_key':
-                del st.session_state[key]
+    if st.button("🔄 Reset Application"):
+        keys_to_reset = {
+            "candidate_email": "",
+            "resume_text": "",
+            "analysis_complete": False,
+            "is_selected": False,
+            "resume_feedback": None,
+            "current_pdf": None,
+            "role": "",
+            "role_requirements": ""
+        }
+
+        for key, value in keys_to_reset.items():
+            st.session_state[key] = value
+
+        if "resume_uploader" in st.session_state:
+            del st.session_state["resume_uploader"]
+
         st.rerun()
 
 

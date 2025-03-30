@@ -1,6 +1,7 @@
 import json
 import pytz
 import streamlit as st
+from database import get_db_connection
 from datetime import datetime, timedelta
 from agno.agent import Agent
 from phi.utils.log import logger
@@ -66,7 +67,6 @@ def send_selection_email(email_agent: Agent, to_email: str, role: str) -> None:
         1. Congratulate them on being selected
         2. Explain the next steps in the process
         3. Mention that they will receive interview details shortly
-        4. The name of the company is 'AI Recruiting Team'
         """
     )
 
@@ -92,13 +92,27 @@ def send_rejection_email(email_agent: Agent, to_email: str, role: str, feedback:
 
 
 def schedule_interview(email_agent: Agent, role: str) -> None:
-    """Schedule interviews during business hours (9 AM - 5 PM Vietnam Time)."""
+    """Schedule an interview, save it to the database, and send confirmation email."""
     try:
-        vn_tz = pytz.timezone('Asia/Ho_Chi_Minh')
-        current_time_vn = datetime.now(vn_tz)
-        tomorrow_vn = current_time_vn + timedelta(days=1)
-        interview_time = tomorrow_vn.replace(hour=11, minute=0, second=0, microsecond=0)
-        formatted_time = interview_time.strftime('%Y-%m-%dT%H:%M:%S')
+        interview_time = get_next_available_time()
+        
+        if not interview_time:
+            st.error("⚠ No available interview slots. Please try again later.")
+            return
+
+        candidate_email = st.session_state.get("candidate_email")
+        if not candidate_email:
+            st.error("⚠ Missing candidate email.")
+            return
+
+        conn, cursor = get_db_connection()
+        cursor.execute("""
+            INSERT INTO interview_schedule (candidate_email, interview_time, created_at)
+            VALUES (%s, %s, NOW())
+        """, (candidate_email, interview_time))
+        conn.commit()
+        cursor.close()
+        conn.close()
 
         zoom_link = st.session_state.get("zoom_link", "N/A")
         zoom_passcode = st.session_state.get("zoom_passcode", "N/A")
@@ -106,22 +120,43 @@ def schedule_interview(email_agent: Agent, role: str) -> None:
         email_agent.run(
             f"""Send an interview confirmation email with these details:
 
-        Role: {role} position  
-        Date & Time: {formatted_time} Vietnam Time (UTC+7)  
-        Meeting Link: [{zoom_link}]({zoom_link})  
-        Passcode: {zoom_passcode}  
+            Role: {role} position  
+            Date & Time: {interview_time} Vietnam Time (UTC+7)  
+            Meeting Link: {zoom_link}  
+            Passcode: {zoom_passcode}  
 
-        Please ensure that you are available for the meeting during business hours (9 AM - 5 PM Vietnam Time).  
+            Please ensure that you are available for the meeting during business hours (9 AM - 5 PM Vietnam Time).  
 
-        If you have any questions or need further assistance, feel free to reach out.  
+            If you have any questions or need further assistance, feel free to reach out.  
 
-        Best,  
-        The AI Recruiting Team.
-        """
+            Best,  
+            The AI Recruiting Team.
+            """
         )
 
-        st.success(f"Interview scheduled successfully! Zoom link: {zoom_link}")
+        st.success(f"✅ Interview scheduled successfully! Time: {interview_time} Vietnam Time.")
 
     except Exception as e:
-        logger.error(f"Error scheduling interview: {str(e)}")
-        st.error("Unable to schedule interview. Please try again.")
+        logger.error(f"❌ Error scheduling interview: {str(e)}")
+        st.error("❌ Unable to schedule interview. Please try again.")
+
+
+def get_next_available_time() -> str:
+    """Find available interview slots within the 9 AM - 5 PM (UTC+7) timeframe, automatically moving to the next day if no slots are left."""
+    vn_tz = pytz.timezone('Asia/Ho_Chi_Minh')
+    current_time_vn = datetime.now(vn_tz)
+    search_date = current_time_vn + timedelta(days=1)
+
+    conn, cursor = get_db_connection()
+
+    while True:
+        for hour in range(9, 17):
+            interview_time = search_date.replace(hour=hour, minute=0, second=0, microsecond=0)
+            formatted_time = interview_time.strftime('%Y-%m-%d %H:%M:%S')
+
+            cursor.execute("SELECT COUNT(*) FROM interview_schedule WHERE interview_time = %s", (formatted_time,))
+            if cursor.fetchone()[0] == 0:
+                conn.close()
+                return formatted_time
+        
+        search_date += timedelta(days=1)

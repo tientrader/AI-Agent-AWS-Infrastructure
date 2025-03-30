@@ -14,16 +14,16 @@ def create_resume_analyzer() -> Agent:
             id="gpt-4o",
             api_key=st.session_state.openai_api_key
         ),
-        description="You are an expert technical recruiter who analyzes resumes.",
+        description="You are an expert recruiter who analyzes resumes across all industries and job roles.",
         instructions=[
-            "Analyze the resume against the provided job requirements",
-            "Be detailed in feedback, covering strengths and weaknesses",
-            "For AI/ML roles, consider research, implementation, and deployment",
-            "For Backend roles, evaluate system design, scalability, and database skills",
-            "For Frontend roles, assess UI/UX skills, performance, and JavaScript frameworks",
-            "Consider project experience as valid experience",
-            "Value hands-on experience with key technologies",
-            "Return a JSON response with selection decision and detailed feedback"
+            "Analyze the resume based on the provided job requirements",
+            "Provide detailed feedback covering strengths, weaknesses, and areas for improvement",
+            "Assess technical, soft skills, and relevant experience required for the role",
+            "For technical roles, evaluate domain knowledge, problem-solving ability, and practical experience",
+            "For non-technical roles, consider industry knowledge, communication skills, leadership, and strategic thinking",
+            "Project experience should be considered as valid work experience",
+            "Hands-on experience with relevant tools, technologies, or methodologies is valuable",
+            "Return a structured JSON response with selection decision, justification, and improvement suggestions"
         ]
     )
 
@@ -45,7 +45,7 @@ def create_email_agent() -> Agent:
             "Draft and send professional recruitment emails",
             "Act like a human writing an email",
             "Maintain a friendly yet professional tone",
-            "Always end emails with exactly: 'best,\nthe ai recruiting team'",
+            "Always end emails with exactly: 'Best,\nThe AI Recruiting Team'",
             "Never include the sender's or receiver's name in the signature",
             f"The name of the company is '{st.session_state.company_name}'",
             "Do not use ** or any other markdown formatting for titles. Write plain text instead."

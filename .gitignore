@@ -8,6 +8,8 @@
 # Ignore .terraform directory
 .terraform/
 
+.idea/
+
 # Ignore override files
 override.tf
 override.tf.json
